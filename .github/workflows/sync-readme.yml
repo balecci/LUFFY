@@ -1,0 +1,46 @@
+name: Sync README TODO section
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: dev
+          fetch-depth: 0
+      - name: Update and validate README
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsSL https://raw.githubusercontent.com/tooooolathon/LUFFY/fca7758a58824b90dca51c83170ebc3119f8a109/README.md -o /tmp/README.md
+          test "$(grep -c '^### 📝 Complete TODO List$' /tmp/README.md)" -eq 1
+          python - <<'PY'
+          from pathlib import Path
+          old = Path('README.md').read_text()
+          new = Path('/tmp/README.md').read_text()
+          title = '### 📝 Complete TODO List'
+          def outside(text):
+              before, rest = text.split(title, 1)
+              marker = '\n### '
+              _, after = rest.split(marker, 1)
+              return before, after
+          if outside(old) != outside(new):
+              raise SystemExit('content outside TODO section differs')
+          Path('README.md').write_text(new)
+          PY
+      - name: Commit and push
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "balecci"
+          git config user.email "299194067+balecci@users.noreply.github.com"
+          git add README.md
+          git diff --cached --quiet && exit 0
+          git commit -m "Update README TODO list based on code TODOs"
+          git push origin HEAD:dev
