@@ -25,10 +25,10 @@ jobs:
           old = Path('README.md').read_text()
           new = Path('/tmp/README.md').read_text()
           title = '### 📝 Complete TODO List'
+          end = '\n## 🤝 Contributing'
           def outside(text):
               before, rest = text.split(title, 1)
-              marker = '\n### '
-              _, after = rest.split(marker, 1)
+              _, after = rest.split(end, 1)
               return before, after
           if outside(old) != outside(new):
               raise SystemExit('content outside TODO section differs')
